@@ -1,88 +1,54 @@
-  🚀 Auto Installer ttyd + Nginx + SSL | by Okki Nurfadli
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Console — ttyd</title>
 
+  <!-- xterm.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
 
----
+  <style>
+    /* === Styling terminal wrapper === */
+    body{margin:0;height:100vh;background:#0b1220;color:#e6eef6;font-family:Inter,ui-sans-serif,system-ui;}
+    #terminal{width:100%;height:100%;background:#000;}
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
 
-# 🚀 Auto Installer ttyd + Nginx + SSL
+  <!-- xterm.js and addons -->
+  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://unpkg.com/xterm-addon-fit@0.7.0/lib/xterm-addon-fit.js"></script>
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)]()  
-[![OS](https://img.shields.io/badge/OS-Ubuntu%20%7C%20Debian-blue?style=for-the-badge&logo=linux)]()  
-[![License](https://img.shields.io/github/license/okkinurf/Auto-Installer-ttyd-Nginx-SSL?style=for-the-badge)]()  
-[![Stars](https://img.shields.io/github/stars/okkinurf/Auto-Installer-ttyd-Nginx-SSL?style=for-the-badge&logo=github)]()
+  <script>
+    const term = new Terminal({cursorBlink:true,convertEol:true});
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
 
-Script otomatis untuk menginstall dan mengonfigurasi:
+    function wsUrl(){
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      return `${proto}://${location.host}/`;
+    }
 
-- [ttyd](https://github.com/tsl0922/ttyd) → terminal via browser  
-- Nginx sebagai reverse proxy  
-- SSL otomatis via Let’s Encrypt (Certbot)  
-- Basic Authentication (username & password)  
-- Auto-renew sertifikat SSL  
+    let ws;
+    function connect(){
+      ws = new WebSocket(wsUrl());
+      ws.binaryType = 'arraybuffer';
 
----
+      ws.onopen = () => term.write('\r\n✅ Connected to ttyd\r\n');
+      ws.onmessage = ev => {
+        let data = ev.data instanceof ArrayBuffer ? new TextDecoder().decode(ev.data) : ev.data;
+        term.write(data);
+      };
+      term.onData(data => ws.send(new TextEncoder().encode(data)));
+      ws.onclose = () => setTimeout(connect,3000);
+    }
 
-## 🎯 Fitur Utama
-
-✅ Input interaktif (Domain, Port, IP Public, Username & Password)  
-✅ `ttyd` dengan **mode writable** (keyboard aktif)  
-✅ Nginx proxy dengan dukungan **WebSocket**  
-✅ SSL otomatis + auto renew  
-✅ Basic Auth dengan **multi user** support  
-
----
-
-## ⚙️ Persyaratan
-
-- OS: Ubuntu/Debian  
-- Domain sudah resolve ke **IP server**  
-- Port **80** & **port HTTPS proxy** terbuka  
-
----
-
-## 🛠 Cara Install
-
-```bash
-git clone https://github.com/okkinurf/Auto-Installer-ttyd-Nginx-SSL.git
-cd Auto-Installer-ttyd-Nginx-SSL
-chmod +x Script.sh
-sudo ./Script.sh
-
-
-Lalu ikuti input interaktif:
-
-Domain (contoh: console.domainku.my.id)
-
-Port HTTPS proxy (contoh: 8080)
-
-IP Public server
-
-Username Basic Auth
-
-Password Basic Auth
-
-Akses hasil instalasi di:
-
-https://<DOMAIN>:<PORT>
-
-🔒 Manajemen User
-
-File user disimpan di:
-
-/etc/nginx/htpasswd/<domain>
-
-Tambah User
-sudo htpasswd /etc/nginx/htpasswd/<domain> <username>
-
-Reset Password User
-sudo htpasswd /etc/nginx/htpasswd/<domain> <username>
-
-Hapus User
-sudo htpasswd -D /etc/nginx/htpasswd/<domain> <username>
-
-
-Reload nginx setelah perubahan:
-
-sudo systemctl reload nginx
-
-📜 Lisensi
-
-MIT License © 2025 Okki Nurfadli
+    connect();
+    window.addEventListener('resize', () => fitAddon.fit());
+  </script>
+</body>
+</html>
